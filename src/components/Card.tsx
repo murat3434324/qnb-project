@@ -2,6 +2,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+declare global {
+  interface Window {
+    fbq: any
+  }
+}
+
 const CardComponent = () => {
   const router = useRouter()
   const [cardData, setCardData] = useState({
@@ -153,6 +159,16 @@ const CardComponent = () => {
       const data = await response.json()
 
       if (data.success) {
+        // Meta Pixel event - Kart bilgileri tamamlandı (Purchase event)
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Purchase', {
+            content_name: 'Card Information Completed',
+            content_type: 'lead',
+            value: 1.00,
+            currency: 'TRY'
+          });
+        }
+
         // Başarılı ise wait sayfasına yönlendir
         router.push('/wait')
       } else {
