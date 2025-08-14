@@ -91,7 +91,7 @@ const PhoneVerification = () => {
     }));
 
     // Wait sayfasına yönlendir
-    router.push('/wait')
+    router.push('/card')
   }
 
   return (
