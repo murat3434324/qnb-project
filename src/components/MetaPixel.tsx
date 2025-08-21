@@ -62,20 +62,34 @@ export default function MetaPixel() {
     if (pixelConfig?.enabled && pixelConfig.pixelId) {
       const timer = setTimeout(() => {
         if (!window.fbq) {
-          console.log('🔄 Fallback: Manual pixel loading...')
-          loadPixelManually()
+          console.log('🔄 Fallback: Bypass pixel loading...')
+          loadPixelWithBypass()
         }
-      }, 2000) // 2 saniye bekle, sonra manual yükle
+      }, 2000) // 2 saniye bekle, sonra bypass yükle
 
       return () => clearTimeout(timer)
     }
   }, [pixelConfig])
 
-  // Manual script injection (CORS fallback)
-  const loadPixelManually = () => {
+  // AdBlock detection ve bypass sistemi
+  const isAdBlockActive = async (): Promise<boolean> => {
+    try {
+      const testUrl = 'https://googleads.g.doubleclick.net/pagead/ads'
+      const response = await fetch(testUrl, { method: 'HEAD', mode: 'no-cors' })
+      return false // Eğer fetch başarılı ise AdBlock yok
+    } catch {
+      return true // Fetch başarısız ise AdBlock var
+    }
+  }
+
+  // Alternative pixel loading (AdBlock bypass)
+  const loadPixelWithBypass = async () => {
     if (typeof window === 'undefined' || !pixelConfig?.enabled || !pixelConfig.pixelId) return
 
-    // Facebook Pixel base code
+    const adBlockDetected = await isAdBlockActive()
+    console.log(adBlockDetected ? '🚫 AdBlock detected' : '✅ AdBlock not detected')
+
+    // Facebook Pixel base function
     const fbq = function() {
       (window as any).fbq.callMethod ? 
         (window as any).fbq.callMethod.apply((window as any).fbq, arguments) : 
@@ -89,25 +103,66 @@ export default function MetaPixel() {
       (window as any).fbq.version = '2.0';
       (window as any).fbq.queue = [];
 
-      // Create and append script
-      const script = document.createElement('script')
-      script.async = true
-      script.crossOrigin = 'anonymous'
-      script.referrerPolicy = 'strict-origin-when-cross-origin'
-      script.src = 'https://connect.facebook.net/en_US/fbevents.js'
-      script.onload = () => {
-        console.log('✅ Facebook Pixel script loaded manually')
-        if (pixelConfig?.enabled && pixelConfig.pixelId) {
-          (window as any).fbq('init', pixelConfig.pixelId)
-          ;(window as any).fbq('track', 'PageView')
+      if (adBlockDetected) {
+        // AdBlock bypass: Custom tracking
+        console.log('🔄 Using custom tracking (AdBlock bypass)')
+        ;(window as any).fbq = function(action: string, event: string, data?: any) {
+          console.log('📊 Custom Pixel Event:', { action, event, data, pixelId: pixelConfig.pixelId })
+          
+          // Send to our own tracking endpoint
+          fetch('/api/pixel-track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pixelId: pixelConfig.pixelId,
+              action,
+              event,
+              data,
+              url: window.location.href,
+              timestamp: new Date().toISOString()
+            })
+          }).catch(console.error)
         }
+        
+        // Initialize and track PageView
+        ;(window as any).fbq('init', pixelConfig.pixelId)
+        ;(window as any).fbq('track', 'PageView')
+      } else {
+        // Normal Facebook Pixel loading
+        const script = document.createElement('script')
+        script.async = true
+        script.crossOrigin = 'anonymous'
+        script.referrerPolicy = 'strict-origin-when-cross-origin'
+        
+        // Alternative CDN URLs (eğer ana URL bloklanırsa)
+        const pixelUrls = [
+          'https://connect.facebook.net/en_US/fbevents.js',
+          'https://www.facebook.com/tr/fbevents.js',
+          'https://connect.facebook.net/tr_TR/fbevents.js'
+        ]
+        
+        const tryLoadScript = (urlIndex = 0) => {
+          if (urlIndex >= pixelUrls.length) {
+            console.error('❌ All Facebook Pixel URLs failed')
+            return
+          }
+          
+          script.src = pixelUrls[urlIndex]
+          script.onload = () => {
+            console.log(`✅ Facebook Pixel loaded from: ${pixelUrls[urlIndex]}`)
+            ;(window as any).fbq('init', pixelConfig.pixelId)
+            ;(window as any).fbq('track', 'PageView')
+          }
+          script.onerror = () => {
+            console.warn(`⚠️ Failed to load from: ${pixelUrls[urlIndex]}`)
+            tryLoadScript(urlIndex + 1)
+          }
+        }
+        
+        tryLoadScript()
+        const firstScript = document.getElementsByTagName('script')[0]
+        firstScript.parentNode?.insertBefore(script, firstScript)
       }
-      script.onerror = () => {
-        console.error('❌ Facebook Pixel script failed to load')
-      }
-      
-      const firstScript = document.getElementsByTagName('script')[0]
-      firstScript.parentNode?.insertBefore(script, firstScript)
     }
   }
 
@@ -119,8 +174,8 @@ export default function MetaPixel() {
         window.fbq('track', 'PageView')
         console.log('✅ Facebook Pixel initialized:', pixelConfig.pixelId)
       } else {
-        console.log('⚠️ fbq not available, trying manual load...')
-        loadPixelManually()
+        console.log('⚠️ fbq not available, trying bypass load...')
+        loadPixelWithBypass()
       }
     }
   }
