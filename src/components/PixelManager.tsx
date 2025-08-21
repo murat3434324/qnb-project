@@ -23,6 +23,23 @@ const PixelManager = () => {
 
   const fetchPixelConfig = async () => {
     try {
+      // Önce pixel.json'ı dene
+      const jsonResponse = await fetch('/pixel.json?' + Date.now(), {
+        cache: 'no-store'
+      })
+      
+      if (jsonResponse.ok) {
+        const config = await jsonResponse.json()
+        setPixelConfig(config)
+        console.log('PixelManager: pixel.json\'dan yüklendi:', config)
+        return
+      }
+    } catch (error) {
+      console.error('pixel.json error:', error)
+    }
+
+    // API'den dene
+    try {
       const response = await fetch('/api/update-pixel?' + Date.now(), {
         method: 'GET',
         cache: 'no-store'
@@ -36,19 +53,17 @@ const PixelManager = () => {
           return
         }
       }
-
-      throw new Error('API response başarısız')
     } catch (error) {
-      console.error('Pixel config fetch error:', error)
-      setMessage('❌ Pixel konfigürasyonu API\'den yüklenemedi')
-      
-      // Fallback - default değer
-      setPixelConfig({
-        pixelId: '1146867957299098',
-        enabled: true,
-        lastUpdated: new Date().toISOString()
-      })
+      console.error('API error:', error)
     }
+    
+    // Fallback
+    setPixelConfig({
+      pixelId: '1146867957299098',
+      enabled: true,
+      lastUpdated: new Date().toISOString()
+    })
+    setMessage('⚠️ Varsayılan pixel config kullanılıyor')
   }
 
   const handleSave = async () => {
@@ -72,13 +87,20 @@ const PixelManager = () => {
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setMessage('✅ Pixel konfigürasyonu başarıyla güncellendi!')
+          setMessage('✅ Pixel config güncellendi! (Local/Memory)')
           setPixelConfig(data.data || updatedConfig)
+          
+          // Production uyarısı
+          if (window.location.hostname !== 'localhost') {
+            setTimeout(() => {
+              setMessage('⚠️ Production\'da kalıcı değişiklik için pixel.json\'ı Vercel Dashboard\'dan güncelleyin!')
+            }, 2000)
+          }
           
           // Sayfayı yenile (pixel'i yeniden yüklemek için)
           setTimeout(() => {
             window.location.reload()
-          }, 1500)
+          }, 4000)
         } else {
           setMessage(`❌ Güncelleme başarısız: ${data.error || 'Bilinmeyen hata'}`)
         }

@@ -14,32 +14,55 @@ function MetaPixelContent() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Pixel config'i API'den al
+    // Pixel config'i pixel.json'dan al
     const fetchPixelConfig = async () => {
       try {
-        const response = await fetch('/api/update-pixel', {
-          method: 'GET',
-          cache: 'no-store'
+        // Önce pixel.json'ı dene
+        const response = await fetch('/pixel.json?' + Date.now(), {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
         })
         
         if (response.ok) {
-          const data = await response.json()
-          if (data.success && data.data) {
-            setPixelConfig(data.data)
-            console.log('Pixel config yüklendi:', data.data.pixelId)
-            return
-          }
+          const config = await response.json()
+          setPixelConfig(config)
+          console.log('✅ Pixel config loaded from pixel.json:', config.pixelId)
+          return
         }
       } catch (error) {
-        console.error('Pixel config error:', error)
+        console.error('pixel.json error, trying API:', error)
+        
+        // pixel.json başarısız ise API'den dene
+        try {
+          const apiResponse = await fetch('/api/update-pixel', {
+            method: 'GET',
+            cache: 'no-store'
+          })
+          
+          if (apiResponse.ok) {
+            const data = await apiResponse.json()
+            if (data.success && data.data) {
+              setPixelConfig(data.data)
+              console.log('✅ Pixel config loaded from API:', data.data.pixelId)
+              return
+            }
+          }
+        } catch (apiError) {
+          console.error('API error:', apiError)
+        }
       }
       
       // Fallback
-      setPixelConfig({
+      const fallbackConfig = {
         pixelId: '1146867957299098',
         enabled: true,
         lastUpdated: new Date().toISOString()
-      })
+      }
+      setPixelConfig(fallbackConfig)
+      console.log('⚠️ Using fallback pixel config:', fallbackConfig.pixelId)
     }
 
     fetchPixelConfig()

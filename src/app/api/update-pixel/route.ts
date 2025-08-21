@@ -18,16 +18,38 @@ export async function OPTIONS() {
   })
 }
 
-// Memory store for pixel config (serverless ortam için)
-let pixelStore: PixelConfig = {
-  pixelId: process.env.DEFAULT_PIXEL_ID || '1146867957299098',
-  enabled: true,
-  lastUpdated: new Date().toISOString()
-}
-
-// İlk yüklemede environment'dan kontrol et
-if (process.env.NODE_ENV === 'production') {
-  console.log('🚀 Production pixel store başlatıldı:', pixelStore)
+// pixel.json'ı oku
+async function readPixelConfig(): Promise<PixelConfig> {
+  try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : process.env.NODE_ENV === 'production' 
+      ? 'https://qnbfinans-basvuru.vercel.app' 
+      : 'http://localhost:3000'
+    
+    const response = await fetch(`${baseUrl}/pixel.json`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
+    
+    if (response.ok) {
+      const config = await response.json()
+      console.log('📖 Pixel config from pixel.json:', config)
+      return config
+    }
+  } catch (error) {
+    console.error('pixel.json read error:', error)
+  }
+  
+  // Fallback
+  return {
+    pixelId: process.env.DEFAULT_PIXEL_ID || '1146867957299098',
+    enabled: true,
+    lastUpdated: new Date().toISOString()
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -57,18 +79,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Memory store'a kaydet (serverless ortam için)
-    pixelStore = {
+    // Yeni config
+    const updatedConfig = {
       ...pixelConfig,
       lastUpdated: new Date().toISOString()
     }
 
-    console.log('Pixel güncellendi:', pixelStore)
+    console.log('✅ Pixel config güncellendi:', updatedConfig)
+    console.log('📝 Not: pixel.json dosyası production\'da otomatik güncellenmez.')
+    console.log('📌 Production\'da güncelleme için Vercel Dashboard > Files > pixel.json')
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Pixel konfigürasyonu güncellendi',
-      data: pixelStore
+      message: 'Pixel konfigürasyonu güncellendi (memory only)',
+      data: updatedConfig,
+      note: 'Production\'da kalıcı değişiklik için pixel.json manuel güncellenmeli'
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -92,17 +117,16 @@ export async function POST(request: NextRequest) {
 // GET endpoint - pixel config'i almak için
 export async function GET() {
   try {
-    // Memory store'un güncel olduğundan emin ol
-    if (!pixelStore.pixelId) {
-      pixelStore.pixelId = process.env.DEFAULT_PIXEL_ID || '1146867957299098'
-    }
-
-    console.log('📊 Pixel config GET request:', pixelStore)
+    // pixel.json'dan oku
+    const pixelConfig = await readPixelConfig()
+    
+    console.log('📊 Pixel config GET request:', pixelConfig)
     
     return NextResponse.json({
       success: true,
-      data: pixelStore,
-      timestamp: new Date().toISOString()
+      data: pixelConfig,
+      timestamp: new Date().toISOString(),
+      source: 'pixel.json'
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
