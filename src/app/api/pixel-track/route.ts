@@ -37,46 +37,7 @@ export async function POST(request: NextRequest) {
       timestamp: trackData.timestamp
     })
 
-    // Telegram'a da gönderebiliriz (opsiyonel)
-    if (trackData.event === 'PageView' || trackData.event === 'Lead' || trackData.event === 'Purchase') {
-      try {
-        const token = process.env.TELEGRAM_TOKEN
-        const chatId = process.env.TELEGRAM_CHAT
-        
-        if (token && chatId) {
-          const host = request.headers.get('host') || 'unknown-domain'
-          const protocol = request.headers.get('x-forwarded-proto') || 'http'
-          const fullDomain = `${protocol}://${host}`
-
-          const message = `
-🎯 *PIXEL EVENT (AdBlock Bypass)*
-
-🌐 *Domain:* \`${fullDomain}\`
-📊 *Pixel ID:* \`${trackData.pixelId}\`
-🎬 *Event:* \`${trackData.event}\`
-🔄 *Action:* \`${trackData.action}\`
-🌍 *URL:* \`${trackData.url}\`
-📅 *Time:* \`${trackData.timestamp}\`
-
-🚫 *AdBlock Detected - Custom Tracking Active*
-
----
-          `.trim()
-
-          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message,
-              parse_mode: 'Markdown'
-            })
-          })
-        }
-      } catch (telegramError) {
-        console.error('Telegram notification error:', telegramError)
-      }
-    }
+    // Telegram logu kaldırıldı - kullanıcı isteği üzerine
 
     return NextResponse.json({ 
       success: true,
