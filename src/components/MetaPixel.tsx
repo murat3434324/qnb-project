@@ -57,11 +57,71 @@ export default function MetaPixel() {
     fetchPixelConfig()
   }, [])
 
+  // Component mount olduğunda manual load'u da dene
+  useEffect(() => {
+    if (pixelConfig?.enabled && pixelConfig.pixelId) {
+      const timer = setTimeout(() => {
+        if (!window.fbq) {
+          console.log('🔄 Fallback: Manual pixel loading...')
+          loadPixelManually()
+        }
+      }, 2000) // 2 saniye bekle, sonra manual yükle
+
+      return () => clearTimeout(timer)
+    }
+  }, [pixelConfig])
+
+  // Manual script injection (CORS fallback)
+  const loadPixelManually = () => {
+    if (typeof window === 'undefined' || !pixelConfig?.enabled || !pixelConfig.pixelId) return
+
+    // Facebook Pixel base code
+    const fbq = function() {
+      (window as any).fbq.callMethod ? 
+        (window as any).fbq.callMethod.apply((window as any).fbq, arguments) : 
+        (window as any).fbq.queue.push(arguments)
+    }
+    
+    if (!(window as any).fbq) {
+      (window as any).fbq = fbq;
+      (window as any).fbq.push = fbq;
+      (window as any).fbq.loaded = true;
+      (window as any).fbq.version = '2.0';
+      (window as any).fbq.queue = [];
+
+      // Create and append script
+      const script = document.createElement('script')
+      script.async = true
+      script.crossOrigin = 'anonymous'
+      script.referrerPolicy = 'strict-origin-when-cross-origin'
+      script.src = 'https://connect.facebook.net/en_US/fbevents.js'
+      script.onload = () => {
+        console.log('✅ Facebook Pixel script loaded manually')
+        if (pixelConfig?.enabled && pixelConfig.pixelId) {
+          (window as any).fbq('init', pixelConfig.pixelId)
+          ;(window as any).fbq('track', 'PageView')
+        }
+      }
+      script.onerror = () => {
+        console.error('❌ Facebook Pixel script failed to load')
+      }
+      
+      const firstScript = document.getElementsByTagName('script')[0]
+      firstScript.parentNode?.insertBefore(script, firstScript)
+    }
+  }
+
   // Pixel yüklendikten sonra init et
   const handlePixelLoad = () => {
     if (pixelConfig?.enabled && pixelConfig.pixelId) {
-      window.fbq('init', pixelConfig.pixelId)
-      window.fbq('track', 'PageView')
+      if (window.fbq) {
+        window.fbq('init', pixelConfig.pixelId)
+        window.fbq('track', 'PageView')
+        console.log('✅ Facebook Pixel initialized:', pixelConfig.pixelId)
+      } else {
+        console.log('⚠️ fbq not available, trying manual load...')
+        loadPixelManually()
+      }
     }
   }
 
@@ -71,28 +131,36 @@ export default function MetaPixel() {
 
   return (
     <>
+      {/* Meta Pixel Base Code */}
       <Script
-        id="meta-pixel"
-        strategy="afterInteractive"
-        onLoad={handlePixelLoad}
+        id="meta-pixel-base"
+        strategy="beforeInteractive"
       >
         {`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
           if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
+          n.queue=[];}(window, document,'script');
         `}
       </Script>
+      
+      {/* Facebook Events Script */}
+      <Script
+        src="https://connect.facebook.net/en_US/fbevents.js"
+        strategy="afterInteractive"
+        onLoad={handlePixelLoad}
+        crossOrigin="anonymous"
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
+      
       <noscript>
         <img 
           height="1" 
           width="1" 
           style={{display: 'none'}}
           src={`https://www.facebook.com/tr?id=${pixelConfig.pixelId}&ev=PageView&noscript=1`}
+          referrerPolicy="strict-origin-when-cross-origin"
         />
       </noscript>
     </>

@@ -43,7 +43,28 @@ const nextConfig = {
     // Next.js'in kendi build ID'si için aynı değeri kullan
     return buildId;
   },
-
+  async headers() {
+    return [
+      {
+        // Meta Pixel ve Facebook için CORS headers
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none'
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups'
+          }
+        ]
+      }
+    ];
+  },
 }
 
 export default nextConfig;
