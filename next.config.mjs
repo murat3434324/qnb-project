@@ -46,12 +46,28 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Meta Pixel ve Facebook için CORS headers
+        // Tüm domainler için CORS headers
         source: '/(.*)',
         headers: [
           {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS'
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma'
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true'
+          },
+          {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            value: 'no-referrer-when-downgrade'
           },
           {
             key: 'Cross-Origin-Embedder-Policy',
@@ -59,7 +75,29 @@ const nextConfig = {
           },
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups'
+            value: 'unsafe-none'
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin'
+          }
+        ]
+      },
+      {
+        // API routes için özel CORS
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS'
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma'
           }
         ]
       }

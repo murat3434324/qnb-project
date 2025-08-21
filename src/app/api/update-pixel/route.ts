@@ -6,6 +6,18 @@ interface PixelConfig {
   lastUpdated: string
 }
 
+// CORS preflight handler
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+    },
+  })
+}
+
 // Memory store for pixel config (serverless ortam için)
 let pixelStore: PixelConfig = {
   pixelId: process.env.DEFAULT_PIXEL_ID || '1146867957299098',
@@ -26,7 +38,14 @@ export async function POST(request: NextRequest) {
     if (!pixelConfig.pixelId) {
       return NextResponse.json(
         { success: false, error: 'Pixel ID gerekli' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+          }
+        }
       )
     }
 
@@ -50,6 +69,12 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Pixel konfigürasyonu güncellendi',
       data: pixelStore
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+      }
     })
 
   } catch (error) {
@@ -78,6 +103,12 @@ export async function GET() {
       success: true,
       data: pixelStore,
       timestamp: new Date().toISOString()
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+      }
     })
   } catch (error) {
     console.error('Pixel get error:', error)

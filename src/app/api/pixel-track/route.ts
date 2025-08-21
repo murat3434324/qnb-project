@@ -9,6 +9,18 @@ interface PixelTrackData {
   timestamp: string
 }
 
+// CORS preflight handler
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const trackData: PixelTrackData = await request.json()
@@ -70,6 +82,12 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Pixel event tracked successfully',
       data: trackData
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+      }
     })
 
   } catch (error) {
@@ -79,7 +97,14 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: 'Tracking failed' 
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+        }
+      }
     )
   }
 }
