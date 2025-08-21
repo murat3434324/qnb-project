@@ -23,23 +23,31 @@ const PixelManager = () => {
 
   const fetchPixelConfig = async () => {
     try {
-      // Önce API'den dene
-      const apiResponse = await fetch('/api/update-pixel?' + Date.now())
-      if (apiResponse.ok) {
-        const apiData = await apiResponse.json()
-        if (apiData.success) {
-          setPixelConfig(apiData.data)
+      const response = await fetch('/api/update-pixel?' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          setPixelConfig(data.data)
+          console.log('PixelManager: API\'den yüklendi:', data.data)
           return
         }
       }
 
-      // API başarısız ise pixel.json'dan dene (fallback)
-      const jsonResponse = await fetch('/pixel.json?' + Date.now())
-      const config = await jsonResponse.json()
-      setPixelConfig(config)
+      throw new Error('API response başarısız')
     } catch (error) {
       console.error('Pixel config fetch error:', error)
-      setMessage('Pixel konfigürasyonu yüklenemedi')
+      setMessage('❌ Pixel konfigürasyonu API\'den yüklenemedi')
+      
+      // Fallback - default değer
+      setPixelConfig({
+        pixelId: '1146867957299098',
+        enabled: true,
+        lastUpdated: new Date().toISOString()
+      })
     }
   }
 

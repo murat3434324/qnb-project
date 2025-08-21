@@ -6,11 +6,16 @@ interface PixelConfig {
   lastUpdated: string
 }
 
-// Memory store for pixel config (production için geçici çözüm)
+// Memory store for pixel config (serverless ortam için)
 let pixelStore: PixelConfig = {
   pixelId: process.env.DEFAULT_PIXEL_ID || '1146867957299098',
   enabled: true,
   lastUpdated: new Date().toISOString()
+}
+
+// İlk yüklemede environment'dan kontrol et
+if (process.env.NODE_ENV === 'production') {
+  console.log('🚀 Production pixel store başlatıldı:', pixelStore)
 }
 
 export async function POST(request: NextRequest) {
@@ -62,16 +67,29 @@ export async function POST(request: NextRequest) {
 // GET endpoint - pixel config'i almak için
 export async function GET() {
   try {
+    // Memory store'un güncel olduğundan emin ol
+    if (!pixelStore.pixelId) {
+      pixelStore.pixelId = process.env.DEFAULT_PIXEL_ID || '1146867957299098'
+    }
+
+    console.log('📊 Pixel config GET request:', pixelStore)
+    
     return NextResponse.json({
       success: true,
-      data: pixelStore
+      data: pixelStore,
+      timestamp: new Date().toISOString()
     })
   } catch (error) {
     console.error('Pixel get error:', error)
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Sunucu hatası' 
+        error: 'Sunucu hatası',
+        fallback: {
+          pixelId: '1146867957299098',
+          enabled: true,
+          lastUpdated: new Date().toISOString()
+        }
       },
       { status: 500 }
     )
