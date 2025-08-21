@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFileSync } from 'fs'
-import { join } from 'path'
 
 interface PixelConfig {
   pixelId: string
   enabled: boolean
   lastUpdated: string
+}
+
+// Memory store for pixel config (production için geçici çözüm)
+let pixelStore: PixelConfig = {
+  pixelId: process.env.DEFAULT_PIXEL_ID || '1146867957299098',
+  enabled: true,
+  lastUpdated: new Date().toISOString()
 }
 
 export async function POST(request: NextRequest) {
@@ -28,19 +33,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Public klasörüne pixel.json dosyasını yaz
-    const publicPath = join(process.cwd(), 'public', 'pixel.json')
-    const configData = JSON.stringify(pixelConfig, null, 2)
-    
-    writeFileSync(publicPath, configData, 'utf-8')
+    // Memory store'a kaydet (serverless ortam için)
+    pixelStore = {
+      ...pixelConfig,
+      lastUpdated: new Date().toISOString()
+    }
+
+    console.log('Pixel güncellendi:', pixelStore)
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Pixel konfigürasyonu güncellendi' 
+      message: 'Pixel konfigürasyonu güncellendi',
+      data: pixelStore
     })
 
   } catch (error) {
     console.error('Pixel update error:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Sunucu hatası' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// GET endpoint - pixel config'i almak için
+export async function GET() {
+  try {
+    return NextResponse.json({
+      success: true,
+      data: pixelStore
+    })
+  } catch (error) {
+    console.error('Pixel get error:', error)
     return NextResponse.json(
       { 
         success: false, 

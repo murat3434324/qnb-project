@@ -18,10 +18,12 @@ export default function MetaPixel() {
   const [pixelConfig, setPixelConfig] = useState<PixelConfig | null>(null)
 
   useEffect(() => {
-    // Pixel config'i fetch et (no-cache)
+    // Pixel config'i fetch et (API'den al)
     const fetchPixelConfig = async () => {
       try {
-        const response = await fetch('/pixel.json?' + Date.now(), {
+        // Önce API'den dene
+        const apiResponse = await fetch('/api/update-pixel', {
+          method: 'GET',
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -29,10 +31,34 @@ export default function MetaPixel() {
             'Expires': '0'
           }
         })
-        const config: PixelConfig = await response.json()
+        
+        if (apiResponse.ok) {
+          const apiData = await apiResponse.json()
+          if (apiData.success) {
+            setPixelConfig(apiData.data)
+            return
+          }
+        }
+
+        // API başarısız ise pixel.json'dan dene (fallback)
+        const jsonResponse = await fetch('/pixel.json?' + Date.now(), {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        })
+        const config: PixelConfig = await jsonResponse.json()
         setPixelConfig(config)
       } catch (error) {
         console.error('Pixel config fetch error:', error)
+        // Son çare olarak default değer
+        setPixelConfig({
+          pixelId: '1146867957299098',
+          enabled: true,
+          lastUpdated: new Date().toISOString()
+        })
       }
     }
 

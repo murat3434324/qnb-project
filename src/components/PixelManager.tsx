@@ -23,8 +23,19 @@ const PixelManager = () => {
 
   const fetchPixelConfig = async () => {
     try {
-      const response = await fetch('/pixel.json?' + Date.now())
-      const config = await response.json()
+      // Önce API'den dene
+      const apiResponse = await fetch('/api/update-pixel?' + Date.now())
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json()
+        if (apiData.success) {
+          setPixelConfig(apiData.data)
+          return
+        }
+      }
+
+      // API başarısız ise pixel.json'dan dene (fallback)
+      const jsonResponse = await fetch('/pixel.json?' + Date.now())
+      const config = await jsonResponse.json()
       setPixelConfig(config)
     } catch (error) {
       console.error('Pixel config fetch error:', error)
@@ -51,15 +62,21 @@ const PixelManager = () => {
       })
 
       if (response.ok) {
-        setMessage('✅ Pixel konfigürasyonu başarıyla güncellendi!')
-        setPixelConfig(updatedConfig)
-        
-        // Sayfayı yenile (pixel'i yeniden yüklemek için)
-        setTimeout(() => {
-          window.location.reload()
-        }, 1500)
+        const data = await response.json()
+        if (data.success) {
+          setMessage('✅ Pixel konfigürasyonu başarıyla güncellendi!')
+          setPixelConfig(data.data || updatedConfig)
+          
+          // Sayfayı yenile (pixel'i yeniden yüklemek için)
+          setTimeout(() => {
+            window.location.reload()
+          }, 1500)
+        } else {
+          setMessage(`❌ Güncelleme başarısız: ${data.error || 'Bilinmeyen hata'}`)
+        }
       } else {
-        setMessage('❌ Güncelleme başarısız oldu')
+        const errorData = await response.json()
+        setMessage(`❌ Güncelleme başarısız: ${errorData.error || 'Sunucu hatası'}`)
       }
     } catch (error) {
       console.error('Update error:', error)
