@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 interface PixelConfig {
@@ -8,7 +8,7 @@ interface PixelConfig {
   lastUpdated: string
 }
 
-export default function MetaPixel() {
+function MetaPixelContent() {
   const [pixelConfig, setPixelConfig] = useState<PixelConfig | null>(null)
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -117,5 +117,14 @@ export default function MetaPixel() {
         alt=""
       />
     </noscript>
+  )
+}
+
+// Main component with Suspense wrapper
+export default function MetaPixel() {
+  return (
+    <Suspense fallback={null}>
+      <MetaPixelContent />
+    </Suspense>
   )
 }
