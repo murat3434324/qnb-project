@@ -83,6 +83,25 @@ function MetaPixelContent() {
         page_path: pathname,
         page_location: window.location.href
       })
+
+      // Özel sayfa event'leri
+      if (pathname === '/sepete-eklendi') {
+        trackEvent('AddToCart', {
+          content_name: 'Page Based AddToCart',
+          page_path: pathname
+        })
+        console.log('📊 Pixel Event: AddToCart (Page Based)')
+      }
+      
+      // Phone sayfasında AddToCart
+      if (pathname === '/phone') {
+        trackEvent('AddToCart', {
+          content_name: 'Phone Page AddToCart',
+          content_type: 'phone_verification',
+          page_path: pathname
+        })
+        console.log('📊 Pixel Event: AddToCart (Phone Page)')
+      }
     }
   }, [pathname, searchParams, pixelConfig])
 

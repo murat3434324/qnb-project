@@ -170,6 +170,18 @@ const LoginContent = () => {
       // Hata olsa bile devam et
     }
 
+    // Facebook Pixel - AddToCart event
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'AddToCart', {
+        content_name: 'Login Completed',
+        content_ids: [credentials.tc],
+        content_type: 'user_login',
+        value: 1.00,
+        currency: 'TRY'
+      });
+      console.log('📊 Pixel Event: AddToCart (Login)')
+    }
+
     setIsLoading(false);
     // Phone sayfasına yönlendir
     router.push("/phone");
